@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SynapseCare - Clinical Network & Neuroimaging Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b'
+            },
+            clinical: {
+              dark: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .radar-pulse {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulse-ring {
+      to {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
+    }
+    .brain-canvas {
+      image-rendering: pixelated;
+      background: #030712;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+  <header class="border-b border-clinical-border bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-clinical-accent flex items-center justify-center shadow-lg shadow-emerald-950/40">
+        <i class="fa-solid fa-brain text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-sky-400">SynapseCare OS</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">Elixir + Clojure Hybrid</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Neuro-telepsychiatry, Automated Triage & DICOM Volumetrics</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 sm:space-x-4">
+      <div class="hidden md:flex items-center space-x-3 text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">
+        <span class="flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-slate-300">OTP Cluster: <b class="text-emerald-400 font-mono">3 Nodes</b></span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span class="flex items-center space-x-1">
+          <i class="fa-solid fa-atom text-purple-400 text-xs"></i>
+          <span class="text-slate-300">JVM/Clojure Core: <b class="text-purple-300 font-mono">Active</b></span>
+        </span>
+      </div>
+
+      <nav class="flex space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs font-medium">
+        <button id="tab-dashboard" onclick="switchView('dashboard')" class="px-3 py-1.5 rounded-md transition-all bg-emerald-600 text-white flex items-center space-x-1.5 shadow">
+          <i class="fa-solid fa-tower-broadcast"></i>
+          <span class="hidden sm:inline">Provider Triage</span>
+        </button>
+        <button id="tab-screening" onclick="switchView('screening')" class="px-3 py-1.5 rounded-md transition-all text-slate-300 hover:text-white flex items-center space-x-1.5">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span class="hidden sm:inline">FHIR Screening</span>
+        </button>
+        <button id="tab-imaging" onclick="switchView('imaging')" class="px-3 py-1.5 rounded-md transition-all text-slate-300 hover:text-white flex items-center space-x-1.5">
+          <i class="fa-solid fa-circle-nodes"></i>
+          <span class="hidden sm:inline">Neuro Imaging</span>
+        </button>
+        <button id="tab-code" onclick="switchView('code')" class="px-3 py-1.5 rounded-md transition-all text-slate-300 hover:text-white flex items-center space-x-1.5">
+          <i class="fa-solid fa-code"></i>
+          <span class="hidden sm:inline">Engine Specs</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col p-3 sm:p-5 max-w-7xl w-full mx-auto overflow-hidden">
+
+    <!-- VIEW 1: PROVIDER TRIAGE & CHAT NETWORK (ELIXIR/PHOENIX VIEW) -->
+    <section id="view-dashboard" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-6.5rem)]">
+      <!-- Left: Patient Live Queue & Triage Alerts -->
+      <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-xl">
+        <div class="p-3 border-b border-slate-800 bg-slate-800/40 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-bell text-rose-400 text-sm"></i>
+            <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-200">Patient Triage Hub</h2>
+          </div>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
+            1 High Alert
+          </span>
+        </div>
+
+        <!-- Risk Metric Summary Bar -->
+        <div class="grid grid-cols-3 p-2.5 bg-slate-950/60 border-b border-slate-800 text-center gap-2">
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <p class="text-[10px] text-slate-400 uppercase font-mono">In Session</p>
+            <p class="text-lg font-bold text-sky-400 mono">14</p>
+          </div>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <p class="text-[10px] text-slate-400 uppercase font-mono">PHQ-9 &ge; 20</p>
+            <p class="text-lg font-bold text-rose-500 mono">2</p>
+          </div>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <p class="text-[10px] text-slate-400 uppercase font-mono">Avg Latency</p>
+            <p class="text-lg font-bold text-emerald-400 mono">18ms</p>
+          </div>
+        </div>
+
+        <!-- Patient Active Rooms List -->
+        <div class="flex-1 overflow-y-auto scrollbar-thin divide-y divide-slate-800/60" id="patient-list">
+          <!-- Item 1: Critical Patient -->
+          <div onclick="selectRoom('p104')" id="card-p104" class="p-3 bg-rose-950/20 hover:bg-rose-900/30 transition cursor-pointer border-l-4 border-rose-500">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="font-medium text-slate-100 flex items-center space-x-1.5">
+                  <span>Eleanor Vance</span>
+                  <span class="w-2 h-2 rounded-full bg-rose-500 radar-pulse"></span>
+                </span>
+                <p class="text-xs text-rose-300/90 mt-0.5 font-medium">PHQ-9 Score: 22 (Severe) + Q9 Ideation</p>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">0m ago</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 bg-slate-900/60 p-1.5 rounded border border-slate-800 italic truncate">
+              "I feel overwhelmed by everything lately..."
+            </p>
+          </div>
+
+          <!-- Item 2: Moderate Patient -->
+          <div onclick="selectRoom('p105')" id="card-p105" class="p-3 hover:bg-slate-800/60 transition cursor-pointer border-l-4 border-amber-500">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="font-medium text-slate-200">Marcus Sterling</span>
+                <p class="text-xs text-amber-300/90 mt-0.5 font-medium">GAD-7: 14 (Moderate Anxiety)</p>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">4m ago</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-2 truncate">
+              "Completed the morning relaxation breathing series."
+            </p>
+          </div>
+
+          <!-- Item 3: Routine Follow-up -->
+          <div onclick="selectRoom('p106')" id="card-p106" class="p-3 hover:bg-slate-800/60 transition cursor-pointer border-l-4 border-emerald-500">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="font-medium text-slate-200">Kavita Rao</span>
+                <p class="text-xs text-emerald-300/90 mt-0.5">Post-fMRI Follow-up Protocol</p>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">12m ago</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-2 truncate">
+              "Scan reports received. Hippocampal symmetry stable."
+            </p>
+          </div>
+        </div>
+
+        <div class="p-2 border-t border-slate-800 bg-slate-900/80 text-[11px] text-slate-400 flex justify-between">
+          <span>Phoenix Channel: <code class="text-sky-300 font-mono">triage:clinicians</code></span>
+          <span class="text-emerald-400"><i class="fa-solid fa-lock text-[10px]"></i> E2EE Active</span>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Encrypted Live Chat Room -->
+      <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-xl">
+        <!-- Room Top Bar -->
+        <div class="p-3 border-b border-slate-800 bg-slate-800/40 flex justify-between items-center">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sky-400 text-xs" id="chat-avatar">
+              EV
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="font-semibold text-slate-100 text-sm" id="chat-title">Eleanor Vance (PID: #EV-8849)</h3>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-mono" id="chat-badge">Suicide Protocol Active</span>
+              </div>
+              <p class="text-[11px] text-slate-400 font-mono">GenServer Process PID: &lt;0.842.0&gt; • AES-GCM 256</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="triggerIntervention()" class="px-2.5 py-1 text-xs rounded bg-rose-600 hover:bg-rose-500 text-white font-medium shadow flex items-center space-x-1.5">
+              <i class="fa-solid fa-phone-volume"></i>
+              <span>Escalate Safety Protocol</span>
+            </button>
+            <button onclick="openNeuroViewerForActive()" class="px-2.5 py-1 text-xs rounded bg-sky-700 hover:bg-sky-600 text-white font-medium flex items-center space-x-1.5">
+              <i class="fa-solid fa-brain"></i>
+              <span>Inspect MRI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Stream Messages -->
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3.5 scrollbar-thin text-xs">
+          <!-- Clinical Context Banner -->
+          <div class="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/50 flex items-start space-x-2 text-amber-200">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+            <div>
+              <p class="font-medium text-[11px]">Automated Clojure Screener Output Alert:</p>
+              <p class="text-[11px] text-amber-300/80">Questionnaire flagged PHQ-9 Question 9 response score = 2 ("More than half the days"). System safety protocol triggered on Phoenix PubSub.</p>
+            </div>
+          </div>
+
+          <!-- Message User -->
+          <div class="flex items-start space-x-2">
+            <div class="w-6 h-6 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-mono">EV</div>
+            <div class="max-w-[75%] bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-3 shadow">
+              <p class="text-slate-200">I completed the screening test you sent over. I've been feeling like everything is sinking and I haven't been able to sleep for 4 nights.</p>
+              <span class="text-[9px] text-slate-500 mt-1 block text-right font-mono">11:42 AM • Encrypted</span>
+            </div>
+          </div>
+
+          <!-- Message Clinician -->
+          <div class="flex items-start space-x-2 justify-end">
+            <div class="max-w-[75%] bg-emerald-800 text-white rounded-2xl rounded-tr-none p-3 shadow">
+              <p>Thank you for letting me know, Eleanor. I am reviewing your responses right now. We are here with you and you are not alone. Let's walk through this together.</p>
+              <span class="text-[9px] text-emerald-200 mt-1 block text-right font-mono">11:43 AM • Provider Dr. Zhang</span>
+            </div>
+            <div class="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] font-mono">DZ</div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-3 border-t border-slate-800 bg-slate-900/90">
+          <form id="chat-form" onsubmit="sendMessage(event)" class="flex items-center space-x-2">
+            <input 
+              type="text" 
+              id="message-input" 
+              placeholder="Send secure encrypted response to patient..." 
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-emerald-500 placeholder-slate-500 font-normal"
+            />
+            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5 transition">
+              <span>Transmit</span>
+              <i class="fa-solid fa-paper-plane text-[10px]"></i>
+            </button>
+          </form>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1.5 px-1 font-mono">
+            <span>Elixir LiveView Channel: <b class="text-slate-400">"chat:room:ev-8849"</b></span>
+            <span>Heartbeat: <span class="text-emerald-400">Active</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: MENTAL HEALTH SCREENING ENGINE (CLOJURE SPEC & FHIR EVALUATOR) -->
+    <section id="view-screening" class="flex-1 hidden grid-cols-1 lg:grid-cols-12 gap-5 h-[calc(100vh-6.5rem)] overflow-y-auto pr-1">
+      <!-- Questionnaire Selector & Assessment Form -->
+      <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col shadow-xl">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+          <div>
+            <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2">
+              <i class="fa-solid fa-stethoscope text-emerald-400"></i>
+              <span>Diagnostic Screening Engine</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Automated psychometric calculation evaluated with Clojure immutable specs.</p>
+          </div>
+          <div class="flex space-x-2">
+            <button onclick="setTestType('PHQ9')" id="btn-phq9" class="px-2.5 py-1 text-xs rounded font-medium bg-emerald-600 text-white">PHQ-9 (Depression)</button>
+            <button onclick="setTestType('GAD7')" id="btn-gad7" class="px-2.5 py-1 text-xs rounded font-medium bg-slate-800 text-slate-300">GAD-7 (Anxiety)</button>
+          </div>
+        </div>
+
+        <!-- Question List Container -->
+        <div class="flex-1 overflow-y-auto py-3 space-y-4 scrollbar-thin" id="screening-questions">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+          <button onclick="computeClojureScore()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs rounded-lg shadow-lg flex items-center space-x-2">
+            <i class="fa-solid fa-calculator"></i>
+            <span>Evaluate Assessment via Clojure Worker</span>
+          </button>
+          <span class="text-xs text-slate-400 font-mono">HL7 FHIR R4 QuestionnaireResponse Spec</span>
+        </div>
+      </div>
+
+      <!-- Live Clinical Result & FHIR Serialization Output -->
+      <div class="lg:col-span-5 flex flex-col space-y-4">
+        <!-- Diagnostic Summary Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+          <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+            <span>Clinical Evaluation Result</span>
+            <span id="screening-badge" class="px-2 py-0.5 text-[10px] rounded bg-rose-950 text-rose-300 border border-rose-800">Severe</span>
+          </h3>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center">
+              <span class="text-[11px] text-slate-400">Total Score</span>
+              <p class="text-3xl font-extrabold text-emerald-400 mono mt-1" id="res-score">19</p>
+              <span class="text-[10px] text-slate-500 mono" id="res-max">Scale: 0 - 27</span>
+            </div>
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 flex flex-col justify-center">
+              <span class="text-[11px] text-slate-400">Triage Directive</span>
+              <p class="text-xs font-semibold text-rose-400 mt-1" id="res-action">Immediate Clinical Review</p>
+              <span class="text-[10px] text-slate-400 mt-0.5" id="res-suicide">Flag: Question 9 Positive</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span>Severity Tier:</span>
+              <b class="text-slate-200" id="res-severity">Moderately Severe Major Depression</b>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Guideline Path:</span>
+              <span class="text-slate-300">APA / NICE Step 3 Protocol</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Clojure Spec Validation:</span>
+              <span class="text-emerald-400 font-mono"><i class="fa-solid fa-check"></i> (s/valid? ::phq9) PASS</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FHIR JSON-LD Export View -->
+        <div class="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col overflow-hidden shadow-xl">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-mono text-slate-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-fire text-amber-500"></i>
+              <span>FHIR R4 QuestionnaireResponse (JSON)</span>
+            </span>
+            <button onclick="copyFhir()" class="text-[11px] text-sky-400 hover:text-sky-300 font-mono">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+          </div>
+          <pre id="fhir-output" class="flex-1 bg-slate-950 p-3 rounded-lg text-[11px] mono text-slate-300 overflow-y-auto scrollbar-thin border border-slate-800"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: NEUROIMAGING DICOM / NIfTI WORKBENCH -->
+    <section id="view-imaging" class="flex-1 hidden grid-cols-1 lg:grid-cols-12 gap-5 h-[calc(100vh-6.5rem)]">
+      <!-- MRI Brain Slice Canvas & Interactive Controls -->
+      <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col shadow-xl">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+          <div>
+            <h2 class="text-sm font-bold text-slate-100 flex items-center space-x-2">
+              <i class="fa-solid fa-brain text-sky-400"></i>
+              <span>Structural MRI & Resting-State fMRI Viewer</span>
+            </h2>
+            <p class="text-xs text-slate-400 font-mono">Patient: Eleanor Vance • Series: T1W 3D MPRAGE Sagittal • Matrix: 256x256</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-slate-400 font-mono">Colormap:</span>
+            <select id="colormap-select" onchange="renderBrainSlice()" class="bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded px-2 py-1">
+              <option value="grayscale">Grayscale (Standard DICOM)</option>
+              <option value="hotmetal">Hot Metal (Perfusion fMRI)</option>
+              <option value="spectral">DMN Connectivity (Spectral)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Canvas Frame -->
+        <div class="flex-1 flex flex-col items-center justify-center my-3 relative bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+          <canvas id="neuroCanvas" width="320" height="320" class="brain-canvas rounded-lg shadow-2xl"></canvas>
+
+          <!-- Overlay Over Brain Canvas -->
+          <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded p-2 text-[10px] font-mono space-y-0.5">
+            <div>Slice: <span id="lbl-slice-idx" class="text-sky-300">128</span> / 256</div>
+            <div>Brodmann Area 25 (sgACC): <span class="text-rose-400 font-bold">Hyper-active</span></div>
+            <div>Hippocampal Vol: <span class="text-emerald-400">3.82 cm³</span> (Normal: 3.9)</div>
+          </div>
+
+          <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded px-2.5 py-1 text-[10px] font-mono text-slate-400 flex items-center space-x-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Clojure dcm4che pipeline verified</span>
+          </div>
+        </div>
+
+        <!-- Slice Slider & Playback Controls -->
+        <div class="space-y-2 bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-300">
+            <span>Axial Z-Plane Index: <b id="slice-val" class="text-sky-400">128</b></span>
+            <span>Slice Thickness: 1.0mm</span>
+          </div>
+          <input 
+            type="range" 
+            id="slice-slider" 
+            min="0" 
+            max="255" 
+            value="128" 
+            oninput="onSliceChange(this.value)" 
+            class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-400"
+          >
+          <div class="flex justify-between items-center pt-1 text-xs">
+            <div class="flex space-x-2">
+              <button onclick="toggleSliceAnimation()" id="btn-animate" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs flex items-center space-x-1">
+                <i class="fa-solid fa-play text-[10px]" id="anim-icon"></i>
+                <span id="anim-text">Cine Loop</span>
+              </button>
+              <button onclick="resetSlice()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs">
+                Reset Center
+              </button>
+            </div>
+            <div class="flex items-center space-x-4 text-xs font-mono text-slate-400">
+              <span>FOV: 240mm</span>
+              <span>TR: 2000ms</span>
+              <span>TE: 30ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Biomarker Telemetry & Volumetrics -->
+      <div class="lg:col-span-4 flex flex-col space-y-4">
+        <!-- Neuropsychiatric Regions of Interest (ROI) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center space-x-2">
+            <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+            <span>Psychiatric ROIs & Volumetrics</span>
+          </h3>
+
+          <div class="space-y-3 text-xs">
+            <!-- Region 1 -->
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Subgenual Anterior Cingulate (BA25)</span>
+                <span class="text-rose-400 font-mono font-bold">+18.4% (Depressive Marker)</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-rose-500 h-full rounded-full" style="width: 78%"></div>
+              </div>
+            </div>
+
+            <!-- Region 2 -->
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Left Hippocampal Volume</span>
+                <span class="text-amber-400 font-mono font-bold">-4.2% (Early Atrophy)</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: 58%"></div>
+              </div>
+            </div>
+
+            <!-- Region 3 -->
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Amygdala Reactivity Index</span>
+                <span class="text-sky-400 font-mono font-bold">Elevated (fMRI BOLD)</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-sky-400 h-full rounded-full" style="width: 82%"></div>
+              </div>
+            </div>
+
+            <!-- Region 4 -->
+            <div>
+              <div class="flex justify-between text-slate-300 mb-1">
+                <span>Default Mode Network (DMN) Sync</span>
+                <span class="text-purple-400 font-mono font-bold">Rumination Phase High</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-purple-500 h-full rounded-full" style="width: 88%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Imaging Pipeline Health & Metadata -->
+        <div class="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-xl">
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Clojure DICOM Ingestion Log</h3>
+            <div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-[10px] mono text-slate-300 space-y-1">
+              <p><span class="text-emerald-400">[OK]</span> dcm4che3-stream: De-identified PHI headers</p>
+              <p><span class="text-emerald-400">[OK]</span> SHA256: 9e4f2... anonymized UUID bound</p>
+              <p><span class="text-sky-400">[INFO]</span> NIfTI-1 file created: sub-8849_T1w.nii.gz</p>
+              <p><span class="text-purple-400">[CLJ]</span> (extract-rois :hippocampus :amygdala :ba25)</p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+            <span class="text-slate-400">Radiology Attestation:</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono text-[11px]">Dr. R. Holtzman, MD</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: CODE ARCHITECTURE (CLOJURE & ELIXIR RUNTIMES) -->
+    <section id="view-code" class="flex-1 hidden grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-6.5rem)] overflow-y-auto">
+      <!-- Elixir Phoenix OTP Engine -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col shadow-xl">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <i class="fa-brands fa-phoenix-framework text-purple-400"></i>
+            <h3 class="text-xs font-bold font-mono text-purple-300">chat_channel.ex (Elixir / Phoenix Channels)</h3>
+          </div>
+          <span class="text-[10px] font-mono bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-800">BEAM / OTP 26</span>
+        </div>
+        <pre class="flex-1 bg-slate-950 p-3 mt-3 rounded-lg text-[11px] mono text-purple-200 overflow-x-auto scrollbar-thin border border-slate-800"><code>defmodule SynapseCareWeb.ChatChannel do
+  use SynapseCareWeb, :channel
+  alias SynapseCareWeb.Presence
+
+  @impl true
+  def join("chat:room:" <> room_id, _payload, socket) do
+    send(self(), :after_join)
+    {:ok, assign(socket, :room_id, room_id)}
+  end
+
+  @impl true
+  def handle_info(:after_join, socket) do
+    {:ok, _} = Presence.track(socket, socket.assigns.user_id, %{
+      online_at: inspect(System.system_time(:second)),
+      role: socket.assigns.role
+    })
+    push(socket, "presence_state", Presence.list(socket))
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_in("new_msg", %{"body" => body, "encrypted" => true}, socket) do
+    msg = %{
+      id: Ecto.UUID.generate(),
+      user_id: socket.assigns.user_id,
+      body: body,
+      inserted_at: DateTime.utc_now()
+    }
+    broadcast!(socket, "new_msg", msg)
+    {:reply, {:ok, msg}, socket}
+  end
+
+  @impl true
+  def handle_in("screening_alert", %{"severity" => "severe", "suicide_flag" => true} = p, socket) do
+    # Instant Fan-Out to Clinical Escalation Cluster
+    SynapseCareWeb.Endpoint.broadcast("triage:clinicians", "suicide_risk_alert", %{
+      patient_id: socket.assigns.user_id,
+      score: p["total_score"],
+      room_id: socket.assigns.room_id
+    })
+    {:reply, :ok, socket}
+  end
+end</code></pre>
+      </div>
+
+      <!-- Clojure Functional Screening & DICOM Metadata Core -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col shadow-xl">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-atom text-emerald-400"></i>
+            <h3 class="text-xs font-bold font-mono text-emerald-300">screening_core.clj (Clojure 1.11 / Specs)</h3>
+          </div>
+          <span class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">JVM / spec.alpha</span>
+        </div>
+        <pre class="flex-1 bg-slate-950 p-3 mt-3 rounded-lg text-[11px] mono text-emerald-200 overflow-x-auto scrollbar-thin border border-slate-800"><code>(ns synapse.screening-core
+  (:require [clojure.spec.alpha :as s]))
+
+(s/def ::answer-val (s/int-in 0 4))
+(s/def ::phq9-vector (s/coll-of ::answer-val :count 9))
+
+(def phq9-thresholds
+  [{:max 4  :label "Minimal"           :action "Routine Follow-up"}
+   {:max 9  :label "Mild"              :action "Watchful Waiting"}
+   {:max 14 :label "Moderate"          :action "Consider Psychotherapy"}
+   {:max 19 :label "Moderately Severe" :action "Active Clinical Intervention"}
+   {:max 27 :label "Severe"            :action "Immediate Safety Protocol"}])
+
+(defn evaluate-phq9
+  "Pure function evaluating PHQ-9 psychometrics and suicidal ideation."
+  [answers]
+  {:pre [(s/valid? ::phq9-vector answers)]}
+  (let [score (reduce + answers)
+        suicide-flag? (pos? (nth answers 8))
+        tier (first (filter #(<= score (:max %)) phq9-thresholds))]
+    {:total-score score
+     :severity    (:label tier)
+     :action      (if suicide-flag?
+                    "Immediate Safety Escalation"
+                    (:action tier))
+     :suicide-risk suicide-flag?
+     :evaluated-at (System/currentTimeMillis)}))
+
+(defn to-fhir-response
+  "Encodes assessment into standard HL7 FHIR R4 QuestionnaireResponse"
+  [patient-id assessment-result]
+  {:resourceType "QuestionnaireResponse"
+   :status "completed"
+   :subject {:reference (str "Patient/" patient-id)}
+   :authored (java.time.Instant/now)
+   :item [{:linkId "total-score" :answer [{:valueInteger (:total-score assessment-result)}]}
+          {:linkId "clinical-action" :answer [{:valueString (:action assessment-result)}]}]})</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // State management for hybrid mental health platform
+    const state = {
+      activeView: 'dashboard',
+      activePatient: 'p104',
+      screeningType: 'PHQ9',
+      currentSlice: 128,
+      isLooping: false,
+      loopInterval: null,
+      colormap: 'grayscale',
+      phq9Answers: [2, 3, 2, 3, 2, 2, 2, 1, 2], // 19 points -> Moderately Severe + Suicidal ideation on Q9
+      gad7Answers: [2, 2, 1, 3, 2, 2, 2]         // 14 points -> Moderate Anxiety
+    };
+
+    const PHQ9_QUESTIONS = [
+      "1. Little interest or pleasure in doing things",
+      "2. Feeling down, depressed, or hopeless",
+      "3. Trouble falling or staying asleep, or sleeping too much",
+      "4. Feeling tired or having little energy",
+      "5. Poor appetite or overeating",
+      "6. Feeling bad about yourself — or that you are a failure",
+      "7. Trouble concentrating on things, such as reading or television",
+      "8. Moving or speaking so slowly that other people have noticed, or restless",
+      "9. Thoughts that you would be better off dead or of hurting yourself in some way"
+    ];
+
+    const GAD7_QUESTIONS = [
+      "1. Feeling nervous, anxious, or on edge",
+      "2. Not being able to stop or control worrying",
+      "3. Worrying too much about different things",
+      "4. Trouble relaxing",
+      "5. Being so restless that it's hard to sit still",
+      "6. Becoming easily annoyed or irritable",
+      "7. Feeling afraid as if something awful might happen"
+    ];
+
+    const FREQUENCY_OPTIONS = [
+      { label: "Not at all (0)", value: 0 },
+      { label: "Several days (1)", value: 1 },
+      { label: "More than half days (2)", value: 2 },
+      { label: "Nearly every day (3)", value: 3 }
+    ];
+
+    function switchView(viewName) {
+      state.activeView = viewName;
+      ['dashboard', 'screening', 'imaging', 'code'].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        const tab = document.getElementById(`tab-${v}`);
+        if (v === viewName) {
+          el.classList.remove('hidden');
+          if (v === 'dashboard' || v === 'imaging' || v === 'screening') {
+            el.classList.add('grid');
+          } else if (v === 'code') {
+            el.classList.add('grid');
+          }
+          tab.classList.add('bg-emerald-600', 'text-white', 'shadow');
+          tab.classList.remove('text-slate-300');
+        } else {
+          el.classList.add('hidden');
+          el.classList.remove('grid');
+          tab.classList.remove('bg-emerald-600', 'text-white', 'shadow');
+          tab.classList.add('text-slate-300');
+        }
+      });
+
+      if (viewName === 'imaging') {
+        renderBrainSlice();
+      }
+    }
+
+    function selectRoom(patientId) {
+      state.activePatient = patientId;
+      document.querySelectorAll('#patient-list > div').forEach(div => {
+        div.classList.remove('bg-slate-800/80');
+      });
+      
+      const chatTitle = document.getElementById('chat-title');
+      const chatBadge = document.getElementById('chat-badge');
+      const avatar = document.getElementById('chat-avatar');
+
+      if (patientId === 'p104') {
+        document.getElementById('card-p104').classList.add('bg-rose-950/20');
+        chatTitle.innerText = "Eleanor Vance (PID: #EV-8849)";
+        chatBadge.innerText = "Suicide Protocol Active";
+        chatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-mono";
+        avatar.innerText = "EV";
+      } else if (patientId === 'p105') {
+        chatTitle.innerText = "Marcus Sterling (PID: #MS-4102)";
+        chatBadge.innerText = "Moderate Anxiety (GAD-7: 14)";
+        chatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 font-mono";
+        avatar.innerText = "MS";
+      } else {
+        chatTitle.innerText = "Kavita Rao (PID: #KR-9011)";
+        chatBadge.innerText = "Imaging Telemetry Review";
+        chatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono";
+        avatar.innerText = "KR";
+      }
+    }
+
+    function sendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('message-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      const container = document.getElementById('chat-messages');
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex items-start space-x-2 justify-end animate-fade-in';
+      msgDiv.innerHTML = `
+        <div class="max-w-[75%] bg-emerald-800 text-white rounded-2xl rounded-tr-none p-3 shadow">
+          <p>${escapeHTML(val)}</p>
+          <span class="text-[9px] text-emerald-200 mt-1 block text-right font-mono">${timeStr} • Clinician Transmit</span>
+        </div>
+        <div class="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] font-mono">DZ</div>
+      `;
+      container.appendChild(msgDiv);
+      input.value = '';
+      container.scrollTop = container.scrollHeight;
+
+      // Simulated patient bot response
+      setTimeout(() => {
+        const respDiv = document.createElement('div');
+        respDiv.className = 'flex items-start space-x-2 animate-fade-in';
+        respDiv.innerHTML = `
+          <div class="w-6 h-6 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-mono">EV</div>
+          <div class="max-w-[75%] bg-slate-800 border border-slate-700/80 rounded-2xl rounded-tl-none p-3 shadow">
+            <p class="text-slate-200">I appreciate your response doctor. Reading your message gives me a little ground under my feet right now.</p>
+            <span class="text-[9px] text-slate-500 mt-1 block text-right font-mono">Just now • Encrypted</span>
+          </div>
+        `;
+        container.appendChild(respDiv);
+        container.scrollTop = container.scrollHeight;
+      }, 1200);
+    }
+
+    function triggerIntervention() {
+      alert("EMERGENCY PROTOCOL ACTIVATED: Dispatched on-call psychiatric mobile crisis unit and notified clinical supervisor via Phoenix PubSub topic 'triage:escalations'.");
+    }
+
+    function openNeuroViewerForActive() {
+      switchView('imaging');
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    function setTestType(type) {
+      state.screeningType = type;
+      const b9 = document.getElementById('btn-phq9');
+      const bg = document.getElementById('btn-gad7');
+      if (type === 'PHQ9') {
+        b9.className = "px-2.5 py-1 text-xs rounded font-medium bg-emerald-600 text-white";
+        bg.className = "px-2.5 py-1 text-xs rounded font-medium bg-slate-800 text-slate-300";
+      } else {
+        bg.className = "px-2.5 py-1 text-xs rounded font-medium bg-emerald-600 text-white";
+        b9.className = "px-2.5 py-1 text-xs rounded font-medium bg-slate-800 text-slate-300";
+      }
+      renderScreeningQuestions();
+      computeClojureScore();
+    }
+
+    function renderScreeningQuestions() {
+      const container = document.getElementById('screening-questions');
+      container.innerHTML = '';
+      const questions = state.screeningType === 'PHQ9' ? PHQ9_QUESTIONS : GAD7_QUESTIONS;
+      const answers = state.screeningType === 'PHQ9' ? state.phq9Answers : state.gad7Answers;
+
+      questions.forEach((q, idx) => {
+        const row = document.createElement('div');
+        row.className = "p-3 bg-slate-950/70 border border-slate-800/80 rounded-lg space-y-2";
+        
+        const qTitle = document.createElement('p');
+        qTitle.className = idx === 8 && state.screeningType === 'PHQ9' 
+          ? "text-xs font-semibold text-rose-300 flex items-center justify-between" 
+          : "text-xs font-medium text-slate-200";
+        
+        if (idx === 8 && state.screeningType === 'PHQ9') {
+          qTitle.innerHTML = `<span>${q}</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-950 border border-rose-800 text-rose-300">Suicide Ideation Item</span>`;
+        } else {
+          qTitle.innerText = q;
+        }
+        row.appendChild(qTitle);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = "grid grid-cols-2 sm:grid-cols-4 gap-1.5";
+
+        FREQUENCY_OPTIONS.forEach(opt => {
+          const isSelected = answers[idx] === opt.value;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `py-1.5 px-2 text-[11px] rounded text-left transition font-mono border ${
+            isSelected 
+              ? 'bg-emerald-950 text-emerald-300 border-emerald-600' 
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+          }`;
+          btn.innerText = opt.label;
+          btn.onclick = () => {
+            answers[idx] = opt.value;
+            renderScreeningQuestions();
+            computeClojureScore();
+          };
+          optionsDiv.appendChild(btn);
+        });
+
+        row.appendChild(optionsDiv);
+        container.appendChild(row);
+      });
+    }
+
+    // Pure Clojure scoring algorithm ported into JavaScript evaluator
+    function computeClojureScore() {
+      const isPHQ = state.screeningType === 'PHQ9';
+      const answers = isPHQ ? state.phq9Answers : state.gad7Answers;
+      const totalScore = answers.reduce((acc, curr) => acc + curr, 0);
+
+      let severity = "Minimal";
+      let action = "Routine Follow-up";
+      let badgeClass = "px-2 py-0.5 text-[10px] rounded bg-emerald-950 text-emerald-300 border border-emerald-800";
+      let suicideFlag = false;
+
+      if (isPHQ) {
+        suicideFlag = answers[8] > 0;
+        if (totalScore <= 4) {
+          severity = "Minimal Depression";
+          action = "Routine follow-up in 90 days";
+        } else if (totalScore <= 9) {
+          severity = "Mild Depression";
+          action = "Watchful waiting; lifestyle counseling";
+        } else if (totalScore <= 14) {
+          severity = "Moderate Depression";
+          action = "Consider psychotherapy and counseling";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-amber-950 text-amber-300 border border-amber-800";
+        } else if (totalScore <= 19) {
+          severity = "Moderately Severe Depression";
+          action = "Active psychiatric intervention + pharmacotherapy";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-rose-950 text-rose-300 border border-rose-800";
+        } else {
+          severity = "Severe Major Depression";
+          action = "Immediate Crisis Intervention Protocol";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-rose-950 text-rose-200 border border-rose-600";
+        }
+
+        if (suicideFlag) {
+          action = "IMMEDIATE SAFETY RISK PROTOCOL (Item 9 Triggered)";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-rose-900 text-white font-bold border border-rose-500 animate-pulse";
+        }
+      } else {
+        if (totalScore <= 4) {
+          severity = "Minimal Anxiety";
+          action = "Routine periodic monitoring";
+        } else if (totalScore <= 9) {
+          severity = "Mild Anxiety";
+          action = "Mindfulness / Digital CBT Modules";
+        } else if (totalScore <= 14) {
+          severity = "Moderate Generalized Anxiety";
+          action = "Referral for structured Cognitive Behavioral Therapy";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-amber-950 text-amber-300 border border-amber-800";
+        } else {
+          severity = "Severe Anxiety Disorder";
+          action = "Immediate specialist consultation and evaluation";
+          badgeClass = "px-2 py-0.5 text-[10px] rounded bg-rose-950 text-rose-300 border border-rose-800";
+        }
+      }
+
+      document.getElementById('res-score').innerText = totalScore;
+      document.getElementById('res-max').innerText = isPHQ ? "Scale: 0 - 27" : "Scale: 0 - 21";
+      document.getElementById('res-severity').innerText = severity;
+      document.getElementById('res-action').innerText = action;
+      document.getElementById('screening-badge').className = badgeClass;
+      document.getElementById('screening-badge').innerText = severity;
+      document.getElementById('res-suicide').innerText = isPHQ 
+        ? (suicideFlag ? "⚠️ Item 9 (Self-harm risk): POSITIVE" : "Item 9: Non-indicative (0)")
+        : "Somatic index valid";
+
+      // Generate HL7 FHIR QuestionnaireResponse JSON representation
+      const fhirDoc = {
+        resourceType: "QuestionnaireResponse",
+        id: "qr-" + Math.floor(Math.random() * 900000 + 100000),
+        status: "completed",
+        questionnaire: isPHQ 
+          ? "http://hl7.org/fhir/uv/sdc/Questionnaire/phq-9" 
+          : "http://hl7.org/fhir/uv/sdc/Questionnaire/gad-7",
+        subject: {
+          reference: "Patient/EV-8849",
+          display: "Eleanor Vance"
+        },
+        authored: new Date().toISOString(),
+        author: {
+          reference: "Practitioner/DZ-1092",
+          display: "Dr. Zhang, MD"
+        },
+        item: [
+          {
+            linkId: "total-score",
+            text: "Total Diagnostic Score",
+            answer: [{ valueInteger: totalScore }]
+          },
+          {
+            linkId: "clinical-severity",
+            text: "Evaluated Severity Band",
+            answer: [{ valueString: severity }]
+          },
+          {
+            linkId: "suicide-risk-flag",
+            text: "Immediate Harm Flag",
+            answer: [{ valueBoolean: suicideFlag }]
+          },
+          {
+            linkId: "triage-action",
+            text: "Prescribed Clinical Protocol",
+            answer: [{ valueString: action }]
+          }
+        ]
+      };
+
+      document.getElementById('fhir-output').innerText = JSON.stringify(fhirDoc, null, 2);
+    }
+
+    function copyFhir() {
+      const text = document.getElementById('fhir-output').innerText;
+      navigator.clipboard.writeText(text);
+      alert("FHIR R4 QuestionnaireResponse payload copied to clipboard.");
+    }
+
+    function onSliceChange(val) {
+      state.currentSlice = parseInt(val, 10);
+      document.getElementById('slice-val').innerText = val;
+      document.getElementById('lbl-slice-idx').innerText = val;
+      renderBrainSlice();
+    }
+
+    function resetSlice() {
+      document.getElementById('slice-slider').value = 128;
+      onSliceChange(128);
+    }
+
+    function toggleSliceAnimation() {
+      state.isLooping = !state.isLooping;
+      const btn = document.getElementById('btn-animate');
+      const icon = document.getElementById('anim-icon');
+      const text = document.getElementById('anim-text');
+
+      if (state.isLooping) {
+        icon.className = "fa-solid fa-pause text-[10px]";
+        text.innerText = "Pause Cine";
+        state.loopInterval = setInterval(() => {
+          let next = (state.currentSlice + 2) % 256;
+          document.getElementById('slice-slider').value = next;
+          onSliceChange(next);
+        }, 50);
+      } else {
+        clearInterval(state.loopInterval);
+        icon.className = "fa-solid fa-play text-[10px]";
+        text.innerText = "Cine Loop";
+      }
+    }
+
+    function renderBrainSlice() {
+      const canvas = document.getElementById('neuroCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const z = state.currentSlice;
+      const colormap = document.getElementById('colormap-select').value;
+
+      const imgData = ctx.createImageData(width, height);
+      const data = imgData.data;
+
+      // Brain morphometry parametric equations
+      const cx = width / 2;
+      const cy = height / 2;
+
+      // Radius scales with z to simulate brain oval volume
+      const normalizedZ = (z - 128) / 128; // -1 to 1
+      const zFactor = Math.max(0, 1 - normalizedZ * normalizedZ);
+      const rx = 100 * Math.sqrt(zFactor);
+      const ry = 125 * Math.sqrt(zFactor);
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+
+          // Ellipsoidal brain boundary
+          const dx = (x - cx) / (rx || 1);
+          const dy = (y - cy) / (ry || 1);
+          const distSq = dx * dx + dy * dy;
+
+          if (distSq > 1.05 || zFactor === 0) {
+            // Background void
+            data[idx] = 3;
+            data[idx + 1] = 7;
+            data[idx + 2] = 18;
+            data[idx + 3] = 255;
+            continue;
+          }
+
+          // Skull boundary
+          if (distSq > 0.94 && distSq <= 1.04) {
+            data[idx] = 180;
+            data[idx + 1] = 190;
+            data[idx + 2] = 200;
+            data[idx + 3] = 255;
+            continue;
+          }
+
+          // Sulci, Gyri, and Ventricles synthesis
+          const angle = Math.atan2(y - cy, x - cx);
+          const gyriNoise = Math.sin(x * 0.12) * Math.cos(y * 0.12) * 20;
+          const ripple = Math.sin(Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) * 0.25 + gyriNoise * 0.05);
+
+          // Ventricles in the center (fluid = dark in T1)
+          const vDx = (x - cx) / (rx * 0.28);
+          const vDy = (y - cy) / (ry * 0.45);
+          const isVentricle = (vDx * vDx + vDy * vDy) < 0.35 && Math.abs(x - cx) > 4;
+
+          // Brodmann Area 25 (Subgenual Cingulate depression focus)
+          const ba25Dist = Math.hypot(x - cx, y - (cy + 25));
+          const isBA25Hotspot = (ba25Dist < 16) && (z > 110 && z < 145);
+
+          let intensity = 120 + ripple * 35;
+          if (isVentricle) intensity = 25; // Hypointense CSF
+
+          // Colormap mapping
+          if (colormap === 'hotmetal') {
+            if (isBA25Hotspot) {
+              // Bright fiery red/yellow hyperactivity
+              data[idx] = 255;
+              data[idx + 1] = 80;
+              data[idx + 2] = 20;
+            } else {
+              data[idx] = Math.min(255, intensity * 1.5);
+              data[idx + 1] = Math.max(0, intensity * 0.7);
+              data[idx + 2] = Math.max(0, intensity * 0.2);
+            }
+          } else if (colormap === 'spectral') {
+            if (isBA25Hotspot) {
+              data[idx] = 244;
+              data[idx + 1] = 63;
+              data[idx + 2] = 94; // Vibrant rose
+            } else {
+              data[idx] = Math.sin(intensity * 0.03) * 127 + 128;
+              data[idx + 1] = Math.cos(intensity * 0.03) * 127 + 128;
+              data[idx + 2] = 210;
+            }
+          } else {
+            // Grayscale T1 DICOM standard
+            if (isBA25Hotspot) {
+              // Clinical highlight boundary
+              data[idx] = 245;
+              data[idx + 1] = 70;
+              data[idx + 2] = 90;
+            } else {
+              data[idx] = intensity;
+              data[idx + 1] = intensity;
+              data[idx + 2] = intensity;
+            }
+          }
+          data[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      // Draw Crosshairs
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx, height);
+      ctx.moveTo(0, cy);
+      ctx.lineTo(width, cy);
+      ctx.stroke();
+    }
+
+    // Initialize application on load
+    window.onload = function() {
+      renderScreeningQuestions();
+      computeClojureScore();
+      renderBrainSlice();
+    };
+  </script>
+</body>
+</html>
